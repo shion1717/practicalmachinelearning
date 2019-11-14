@@ -2,7 +2,9 @@
 title: "practicalmachinelearning"
 author: "Ian Chua"
 date: "11/13/2019"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -31,6 +33,8 @@ dim(testing)
 
 As mentioned, the blanks and NAs are usually by a whole column, not rows. Hence we remove the columns which have a huge number of blanks and NAs. Then, the training dataset is split into two, to reserve some data for cross-validation.
 
+No standardisation was carried out on the dataset, as we will be using decision trees and random forest as our classifier model. These methods are insensitive to the order of magnitude of the different variables.
+
 ```{r preprocess}
 training <- training[,colSums(is.na(training))==0]
 training <- training[,colSums(training=="")==0]
@@ -51,7 +55,8 @@ predtree <- predict(modfittree,newdata=valdata,type="class")
 confusionMatrix(predtree,valdata$classe)
 ```
 
-The accuracy of the model on the validation set is about 75%. While it is quite high, it is not high enough for use in our prediction, as we would like an accuracy of at least 80% to predict the testing dataset.
+The accuracy of the model on the validation set is about 75%, which means that we can expect the out-of-sample error to be about 25%.
+Although the accuracy is quite high, it is not high enough for use in our prediction, as we would like an accuracy of at least 80% to predict the testing dataset.
 
 ## Random forest
 
@@ -63,7 +68,7 @@ predrf <- predict(modfitrf,newdata=valdata,type="class")
 confusionMatrix(predrf,valdata$classe)
 ```
 
-Now, we can see that the model accuracy is much better, at about 99%. Hence, we will use the random forest model to predict on the testing dataset.
+Now, we can see that the model accuracy is much better, at about 99%, meaning the out-of-sample error of this model is only 1%. Hence, we will use the random forest model to predict on the testing dataset.
 
 ```{r predtest}
 predict(modfitrf,newdata=testing,type="class")
