@@ -1,0 +1,70 @@
+---
+title: "practicalmachinelearning"
+author: "Ian Chua"
+date: "11/13/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Background
+This document aims to explore the use of machine learning techniques to classify the weight lifting exercise (WLE) a person is doing, based on the various measurements placed at different parts of the body while the exercise is being performed. 
+
+## Data loading
+
+Over here, we do a preliminary exploration after loading the data, and found that there are many NAs and many blanks. It is also noted that the blanks and NAs largely congregate by columns, not by rows.
+```{r loaddata}
+training <- read.csv(file = "pml-training.csv",as.is = TRUE)
+testing <- read.csv(file = "pml-testing.csv", as.is = TRUE)
+library(caret)
+library(rpart)
+library(randomForest)
+library(e1071)
+dim(training)
+sum(is.na(training))
+dim(testing)
+```
+
+## Data cleaning and preprocessing
+
+As mentioned, the blanks and NAs are usually by a whole column, not rows. Hence we remove the columns which have a huge number of blanks and NAs. Then, the training dataset is split into two, to reserve some data for cross-validation.
+
+```{r preprocess}
+training <- training[,colSums(is.na(training))==0]
+training <- training[,colSums(training=="")==0]
+training <- training[,-(1:7)]
+training$classe <- as.factor(training$classe)
+inTrain <- createDataPartition(training$classe,p=0.7)[[1]]
+traindata <- training[inTrain,]
+valdata <- training[-inTrain,]
+```
+
+## Simple decision tree
+
+Next, a simple decision tree is fitted to the data we have, in order to predict the "classe", which indicates the WLE. This model is then used to predict the classe of the validation dataset. A confusion matrix is then contructed to determine the accuracy of the model.
+
+```{r treetrain}
+modfittree <- rpart(classe~.,data=traindata)
+predtree <- predict(modfittree,newdata=valdata,type="class")
+confusionMatrix(predtree,valdata$classe)
+```
+
+The accuracy of the model on the validation set is about 75%. While it is quite high, it is not high enough for use in our prediction, as we would like an accuracy of at least 80% to predict the testing dataset.
+
+## Random forest
+
+Next, a random forest model is fitted to the training data. Similar methods are used to evaluate the accuracy of the model.
+
+```{r rftrain}
+modfitrf <- randomForest(classe~.,data=traindata,ntree=200,mtry=5)
+predrf <- predict(modfitrf,newdata=valdata,type="class")
+confusionMatrix(predrf,valdata$classe)
+```
+
+Now, we can see that the model accuracy is much better, at about 99%. Hence, we will use the random forest model to predict on the testing dataset.
+
+```{r predtest}
+predict(modfitrf,newdata=testing,type="class")
+```
